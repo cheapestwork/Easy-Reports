@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver Report - Final</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f4f7f6; margin: 0; padding: 15px; color: #222; }
+        .app-container { max-width: 500px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { font-size: 1.3rem; border-bottom: 2px solid #007bff; padding-bottom: 8px; margin-top: 0; }
+        .row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .row > div { flex: 1; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #555; }
+        input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        
+        button { background: #007bff; color: white; border: none; padding: 14px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 10px; transition: background 0.2s; }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #6c757d; }
+        button.success { background: #28a745; }
+        button.outline { background: transparent; border: 2px solid #007bff; color: #007bff; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        /* Поръчка преглед стил */
+        .order-preview { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9rem; }
+        .order-main-line { font-weight: bold; margin-bottom: 3px; }
+        .order-sub-line { font-size: 0.78rem; font-style: italic; color: #555; background: #e9ecef; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+        
+        .order-form-card { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+        .order-form-card.hidden { display: none; }
+        
+        /* Време контроли */
+        .time-controls { display: flex; align-items: center; gap: 8px; }
+        .time-display { width: 55px !important; text-align: center; font-weight: bold; background: #28a745 !important; color: white !important; border: none !important; border-radius: 6px; padding: 10px 5px !important; font-size: 1.1rem !important; }
+        .time-btn { width: 34px; height: 34px; border-radius: 50%; padding: 0; font-size: 0.85rem; margin: 0; background: #e3f2fd; color: #007bff; border: 2px solid #007bff; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        .time-btn.reset { background: #f8d7da; border-color: #dc3545; color: #dc3545; width: 30px; height: 30px; font-size: 0.9rem; }
+        
+        /* Summary кутия */
+        .summary-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-weight: bold; font-size: 1.1rem; }
+        .summary-flex-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .current-total-badge { background: #e2e3e5; color: #495057; font-style: italic; font-size: 0.85rem; padding: 6px 10px; border-radius: 6px; font-weight: normal; }
+        .current-total-code { font-family: monospace; font-weight: bold; color: #212529; }
+        
+        /* Корекции бутони на отделни редове */
+        .adjustments-buttons-stack { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .adjustments-buttons-stack button { font-size: 0.9rem; padding: 12px; margin: 0; background: #ffc107; color: #000; border: none; text-transform: uppercase; font-weight: bold; }
+        
+        .adjustment-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #fff3cd; padding: 10px; border-radius: 8px; }
+        .adjustment-item input, .adjustment-item select { padding: 8px; }
+        
+        .result-box { margin-top: 20px; padding: 15px; background: #272822; color: #f8f8f2; border-radius: 8px; font-family: monospace; white-space: pre-wrap; font-size: 1rem; line-height: 1.5; user-select: all; }
+        
+        /* Бутон за банк плащане */
+        .bank-toggle-btn { background: #e9ecef; border: 2px solid #ced4da; color: #495057; text-align: center; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; transition: all 0.2s; margin-bottom: 10px; }
+        .bank-toggle-btn.active { background: #d4edda; border-color: #28a745; color: #155724; }
+
+        /* Травел секция */
+        .travel-container { width: 50%; background: #fdfdfe; border: 1px dashed #ced4da; padding: 8px; border-radius: 8px; margin-bottom: 12px; }
+        .checkbox-small { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+        .checkbox-small input[type="checkbox"] { width: 15px; height: 15px; cursor: pointer; }
+        .checkbox-small label { font-size: 0.78rem; color: #666; font-weight: normal; margin: 0; cursor: pointer; }
+
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- STEP 1 -->
+    <div id="step-1" class="section active">
+        <h2>👤 Start Shift</h2>
+        <div class="row">
+            <div><label>Driver *</label><input type="text" id="driverName" placeholder="Driver Name" required></div>
+            <div><label>Escort *</label><input type="text" id="machineName" placeholder="Escort Name" required></div>
+        </div>
+        <div class="row">
+            <div><label>Date</label><input type="date" id="dateInput"></div>
+        </div>
+        <button onclick="validateAndStart()">START</button>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step-2" class="section">
+        <h2>📦 Bookings</h2>
+        <div id="ordersList"></div>
+
+        <div id="orderForm" class="order-form-card hidden">
+            <!-- Ред с посткод и време -->
+            <div class="row">
+                <div style="flex: 1.1;">
+                    <input type="text" id="postcode" placeholder="Postcode *" style="text-transform: uppercase;" oninput="this.value = this.value.toUpperCase()" required>
+                </div>
+                <div style="flex: 1.9;">
+                    <div class="time-controls">
+                        <input type="text" id="timeUnitsDisplay" class="time-display" value="1" readonly>
+                        <button type="button" class="time-btn" onclick="addTime(1)">+1</button>
+                        <button type="button" class="time-btn" onclick="addTime(0.5)">+30</button>
+                        <button type="button" class="time-btn reset" onclick="resetTime()">⟲</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Банков бутон -->
+            <div id="bankToggleBtn" class="bank-toggle-btn" onclick="toggleBankPayment()">BANK PAYMENT: NO</div>
+            
+            <div class="row hidden" id="bankInputRow" style="margin-top: 8px; margin-bottom: 12px;">
+                <div><label>Bank Amount (£)</label><input type="number" id="bankAmount" value="0"></div>
+            </div>
+
+            <!-- Травел такса -->
+            <div class="travel-container">
+                <div class="checkbox-small">
+                    <input type="checkbox" id="hasTravel" onchange="toggleTravelInput()">
+                    <label for="hasTravel">Add travel fee</label>
+                </div>
+                <div class="row hidden" id="travelInputRow" style="margin: 0;">
+                    <div><input type="number" id="travelFee" value="0" placeholder="£" style="padding: 8px;"></div>
+                </div>
+            </div>
+            
+            <button class="success" onclick="saveOrder()" style="margin-top: 5px;">✔️ Complete Order</button>
+        </div>
+
+        <div id="orderActions">
+            <button class="outline" onclick="showOrderForm()">+ Add Booking</button>
+            <button class="secondary" onclick="finishOrders()">No More Bookings ➡️</button>
+        </div>
+    </div>
+
+    <!-- STEP 3 -->
+    <div id="step-3" class="section">
+        <h2>📊 Current Balance</h2>
+        <div class="summary-box">
+            <div class="summary-flex-row">
+                <div>Agency: <span id="summaryAgency">£0</span></div>
+                <div class="current-total-badge">
+                    Current Total: <span class="live-total-code" id="liveTotalCode">£0</span>
+                </div>
+            </div>
+            <div id="summaryBankRow" style="margin-top: 8px; font-size: 0.95rem; font-weight: normal;">Bank: <span id="summaryBank">£0</span></div>
+        </div>
+        
+        <label style="text-transform: uppercase; font-weight: bold; margin-bottom: 8px; color: #333;">ADD ADJUSTMENTS (OPTIONAL):</label>
+        <div class="adjustments-buttons-stack">
+            <button onclick="addAdjustment('deposit')">+ DEPOSIT</button>
+            <button onclick="addAdjustment('paid')">+ PAID OUT</button>
+            <button onclick="addAdjustment('reported')">+ REPORTED IN</button>
+        </div>
+        
+        <div id="adjustmentsList"></div>
+        
+        <button class="success" onclick="goToStep4()" style="margin-top: 15px;">🧮 Proceed to Finalize</button>
+    </div>
+
+    <!-- STEP 4 -->
+    <div id="step-4" class="section">
+        <h2>🧮 Finalize</h2>
+        <div class="summary-box" style="text-align: center; font-size: 1.3rem;">
+            TOTAL: <span id="finalTotalSpan">£0</span>
+        </div>
+        
+        <div id="positiveTotalActions" class="hidden">
+            <label>Cash in hand. Who is reporting to the agency?</label>
+            <select id="whoReports"></select>
+        </div>
+
+        <div id="negativeTotalActions" class="hidden">
+            <label style="color: #dc3545;">Agency owes money. Distribute amount:</label>
+            <div class="row">
+                <div><label id="lblOweMachine">Machine</label><input type="number" id="oweMachineAmount" value="0"></div>
+                <div><label id="lblOweDriver">Driver</label><input type="number" id="oweDriverAmount" value="0"></div>
+            </div>
+        </div>
+
+        <button class="success" style="margin-top: 20px;" onclick="generateReport()">📄 Generate Report</button>
+    </div>
+
+    <!-- STEP 5 -->
+    <div id="step-5" class="section">
+        <h2>✅ Final Report</h2>
+        <div id="resultOutput" class="result-box"></div>
+        <button class="outline" onclick="location.reload()" style="margin-top: 15px;">🔄 New Shift</button>
+    </div>
+
+</div>
+
+<script>
+    document.getElementById('dateInput').valueAsDate = new Date();
+    
+    let orders = [];
+    let totalAgency = 0;
+    let totalBank = 0;
+    let finalTotal = 0;
+    
+    let currentTime = 1;
+    let currentClientTotal = 120;
+    let currentAgencyShare = 30;
+    let isBankActive = false;
+
+    function goToStep(stepId) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.getElementById(stepId).classList.add('active');
+    }
+
+    function validateAndStart() {
+        const driver = document.getElementById('driverName').value.trim();
+        const machine = document.getElementById('machineName').value.trim();
+        if(!driver || !machine) {
+            alert('Please fill in both Driver and Machine names.');
+            return;
+        }
+        goToStep('step-2');
+    }
+
+    function addTime(amount) {
+        currentTime += amount;
+        updateTimeDisplay();
+    }
+
+    function resetTime() {
+        currentTime = 1;
+        updateTimeDisplay();
+    }
+
+    function updateTimeDisplay() {
+        document.getElementById('timeUnitsDisplay').value = currentTime;
+        autoCalculateOrder();
+    }
+
+    function autoCalculateOrder() {
+        let fullUnitsBeyondFirst = Math.floor(currentTime - 1);
+        let hasHalfUnit = (currentTime % 1) !== 0;
+
+        currentClientTotal = 120 + (fullUnitsBeyondFirst * 120) + (hasHalfUnit ? 80 : 0);
+        currentAgencyShare = 30 + (fullUnitsBeyondFirst * 40) + (hasHalfUnit ? 40 : 0);
+        
+        if(isBankActive) {
+            document.getElementById('bankAmount').value = currentClientTotal;
+        }
+    }
+
+    function showOrderForm() {
+        document.getElementById('orderForm').classList.remove('hidden');
+        document.getElementById('orderActions').classList.add('hidden');
+        
+        document.getElementById('postcode').value = '';
+        resetTime();
+        
+        isBankActive = false;
+        const bankBtn = document.getElementById('bankToggleBtn');
+        bankBtn.innerText = "BANK PAYMENT: NO";
+        bankBtn.classList.remove('active');
+        document.getElementById('bankInputRow').classList.add('hidden');
+        document.getElementById('bankAmount').value = '0';
+        
+        document.getElementById('hasTravel').checked = false;
+        document.getElementById('travelInputRow').classList.add('hidden');
+        document.getElementById('travelFee').value = '0';
+    }
+
+    function toggleBankPayment() {
+        isBankActive = !isBankActive;
+        const bankBtn = document.getElementById('bankToggleBtn');
+        
+        if(isBankActive) {
+            bankBtn.innerText = "BANK PAYMENT: YES";
+            bankBtn.classList.add('active');
+            document.getElementById('bankInputRow').classList.remove('hidden');
+            document.getElementById('bankAmount').value = currentClientTotal;
+        } else {
+            bankBtn.innerText = "BANK PAYMENT: NO";
+            bankBtn.classList.remove('active');
+            document.getElementById('bankInputRow').classList.add('hidden');
+            document.getElementById('bankAmount').value = 0;
+        }
+    }
+
+    function toggleTravelInput() {
+        if(document.getElementById('hasTravel').checked) {
+            document.getElementById('travelInputRow').classList.remove('hidden');
+            document.getElementById('travelFee').value = '10';
+        } else {
+            document.getElementById('travelInputRow').classList.add('hidden');
+            document.getElementById('travelFee').value = '0';
+        }
+    }
+
+    function saveOrder() {
+        const postcodeField = document.getElementById('postcode');
+        const postcode = postcodeField.value.trim();
+        if(!postcode) {
+            alert('Please enter a Postcode.');
+            postcodeField.focus();
+            return;
+        }
+
+        const travel = document.getElementById('hasTravel').checked ? (parseFloat(document.getElementById('travelFee').value) || 0) : 0;
+        let bank = isBankActive ? parseFloat(document.getElementById('bankAmount').value) : 0;
+        
+        if(bank > currentClientTotal) bank = currentClientTotal;
+        
+        let cash = currentClientTotal - bank;
+        if(travel > 0) cash += travel;
+
+        const order = { postcode, time: currentTime, agency: currentAgencyShare, bank, cash, travel };
+        orders.push(order);
+
+        let paymentsParts = [];
+        if (bank > 0) paymentsParts.push(`Bank: £${bank}`);
+        if (cash > 0) paymentsParts.push(`Cash: £${cash}`);
+        let travelText = travel > 0 ? ` +£${travel} travel` : '';
+        
+        let subLineText = paymentsParts.join(' & ');
+        if(travelText) subLineText += travelText;
+
+        const preview = `
+            <div class="order-preview">
+                <div class="order-main-line">✔️ ${postcode} - ${currentTime} / £${currentAgencyShare}</div>
+                <div class="order-sub-line">${subLineText}</div>
+            </div>`;
+        
+        document.getElementById('ordersList').insertAdjacentHTML('beforeend', preview);
+
+        document.getElementById('orderForm').classList.add('hidden');
+        document.getElementById('orderActions').classList.remove('hidden');
+    }
+
+    function finishOrders() {
+        totalAgency = orders.reduce((sum, o) => sum + o.agency, 0);
+        totalBank = orders.reduce((sum, o) => sum + o.bank, 0);
+        
+        document.getElementById('summaryAgency').innerText = `£${totalAgency}`;
+        
+        if(totalBank > 0) {
+            document.getElementById('summaryBankRow').style.display = 'block';
+            document.getElementById('summaryBank').innerText = `£${totalBank}`;
+        } else {
+            document.getElementById('summaryBankRow').style.display = 'none';
+        }
+        
+        updateLiveTotal();
+        goToStep('step-3');
+    }
+
+    function updateLiveTotal() {
+        let depTotal = 0, paidTotal = 0, repTotal = 0;
+        document.querySelectorAll('.adjustment-item').forEach(el => {
+            const type = el.getAttribute('data-type');
+            const amount = parseFloat(el.querySelector('.adj-amount').value) || 0;
+            if(type === 'deposit') depTotal += amount;
+            if(type === 'paid') paidTotal += amount;
+            if(type === 'reported') repTotal += amount;
+        });
+        
+        let currentTot = totalAgency + repTotal + depTotal - totalBank - paidTotal;
+        let formattedTot = currentTot < 0 ? `-£${Math.abs(currentTot)}` : `£${currentTot}`;
+        document.getElementById('liveTotalCode').innerText = formattedTot;
+        return currentTot;
+    }
+
+    function addAdjustment(type) {
+        const container = document.getElementById('adjustmentsList');
+        const id = Date.now();
+        const drName = document.getElementById('driverName').value;
+        const mcName = document.getElementById('machineName').value;
+        let html = '';
+
+        if(type === 'deposit') {
+            html = `<div class="adjustment-item" id="adj_${id}" data-type="deposit">
+                    <span>Deposit:</span>
+                    <select class="adj-name"><option value="${drName}">${drName}</option><option value="${mcName}">${mcName}</option></select>
+                    <input type="number" class="adj-amount" placeholder="£" style="width: 80px;" oninput="updateLiveTotal()">
+                </div>`;
+        } else if (type === 'paid') {
+            html = `<div class="adjustment-item" id="adj_${id}" data-type="paid">
+                    <span>Paid to:</span>
+                    <input type="text" class="adj-name" placeholder="Name...">
+                    <input type="number" class="adj-amount" placeholder="£" style="width: 80px;" oninput="updateLiveTotal()">
+                </div>`;
+        } else if (type === 'reported') {
+            html = `<div class="adjustment-item" id="adj_${id}" data-type="reported">
+                    <span>Payment In:</span>
+                    <input type="text" class="adj-name" placeholder="Name...">
+                    <input type="number" class="adj-amount" placeholder="£" style="width: 80px;" oninput="updateLiveTotal()">
+                </div>`;
+        }
+        
+        container.insertAdjacentHTML('beforeend', html);
+    }
+
+    function goToStep4() {
+        finalTotal = updateLiveTotal();
+        
+        let finalFormatted = finalTotal < 0 ? `-£${Math.abs(finalTotal)}` : `£${finalTotal}`;
+        document.getElementById('finalTotalSpan').innerText = finalFormatted;
+        document.getElementById('finalTotalSpan').style.color = finalTotal < 0 ? '#dc3545' : '#28a745';
+        
+        document.getElementById('positiveTotalActions').classList.add('hidden');
+        document.getElementById('negativeTotalActions').classList.add('hidden');
+        
+        const drName = document.getElementById('driverName').value;
+        const mcName = document.getElementById('machineName').value;
+        
+        if (finalTotal > 0) {
+            document.getElementById('positiveTotalActions').classList.remove('hidden');
+            document.getElementById('whoReports').innerHTML = `<option value="${drName}">${drName} (Driver)</option><option value="${mcName}">${mcName} (Machine)</option>`;
+        } else if (finalTotal < 0) {
+            document.getElementById('negativeTotalActions').classList.remove('hidden');
+            document.getElementById('lblOweMachine').innerText = mcName;
+            document.getElementById('lblOweDriver').innerText = drName;
+        }
+        
+        goToStep('step-4');
+    }
+
+    function formatDate(dateStr) {
+        const d = new Date(dateStr);
+        return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${d.getFullYear()}`;
+    }
+
+    function generateReport() {
+        const driverName = document.getElementById('driverName').value || "Unknown";
+        const machineName = document.getElementById('machineName').value || "Unknown";
+        const dateStr = document.getElementById('dateInput').value;
+        
+        let report = `${driverName} - ${machineName}\n${formatDate(dateStr)}\n------\n`;
+        
+        orders.forEach(o => {
+            let payments = [];
+            if (o.bank > 0) payments.push(`Bank: £${o.bank}`);
+            if (o.cash > 0) payments.push(`Cash: £${o.cash}`);
+            let travelText = o.travel > 0 ? ` +£${o.travel} travel` : '';
+            report += `${o.postcode} - ${o.time} / £${o.agency} (${payments.join(' & ')})${travelText}\n`;
+        });
+
+        report += `------\nAgency: £${totalAgency}\n`;
+        
+        document.querySelectorAll('.adjustment-item').forEach(el => {
+            const type = el.getAttribute('data-type');
+            const name = el.querySelector('.adj-name').value;
+            const amount = parseFloat(el.querySelector('.adj-amount').value) || 0;
+            if(amount > 0) {
+                if(type === 'reported') report += `Reported In by ${name}: £${amount}\n`;
+                if(type === 'deposit') report += `Deposit ${name}: £${amount}\n`;
+                if(type === 'paid') report += `Paid to ${name}: £${amount}\n`;
+            }
+        });
+        
+        if(totalBank > 0) report += `Bank: £${totalBank}\n`;
+        
+        let finalFormatted = finalTotal < 0 ? `-£${Math.abs(finalTotal)}` : `£${finalTotal}`;
+        report += `TOTAL: ${finalFormatted}`;
+        
+        if (finalTotal > 0) {
+            const who = document.getElementById('whoReports').value;
+            report += ` - REPORTS ${who.toUpperCase()}`;
+        } else if (finalTotal < 0) {
+            report += ` - Agency owes:\n`;
+            const mOwe = parseFloat(document.getElementById('oweMachineAmount').value) || 0;
+            const dOwe = parseFloat(document.getElementById('oweDriverAmount').value) || 0;
+            
+            if(mOwe > 0) report += `£${mOwe} - ${machineName}\n`;
+            if(dOwe > 0) report += `£${dOwe} - ${driverName}\n`;
+        }
+
+        document.getElementById('resultOutput').textContent = report;
+        goToStep('step-5');
+    }
+</script>
+
+</body>
+</html>
